@@ -50,6 +50,7 @@ DP_WRITE_STATUS_CLEAR_COMMAND_COUNTER equ 0x100
 DP_WRITE_STATUS_CLEAR_CLOCK_COUNTER   equ 0x200
 
 ;; Rasterizer Command Set
+DP_OP_NO_OP                  equ 0x00
 DP_OP_SET_COLOR_IMAGE        equ 0x3f
 DP_OP_SET_TEXTURE_IMAGE      equ 0x3d
 DP_OP_SET_Z_IMAGE            equ 0x3e
@@ -60,7 +61,8 @@ DP_OP_LOAD_TILE              equ 0x34
 DP_OP_SET_FILL_COLOR         equ 0x37
 DP_OP_FILL_RECTANGLE         equ 0x36
 DP_OP_TEXTURE_RECTANGLE      equ 0x24
-DP_OP_SYNC_LOAD              equ 0x31
+;DP_OP_SYNC_LOAD              equ 0x31
+DP_OP_SYNC_LOAD              equ 0x26
 DP_OP_SYNC_TILE              equ 0x28
 DP_OP_SYNC_PIPE              equ 0x27
 DP_OP_SYNC_FULL              equ 0x29
@@ -88,4 +90,10 @@ DP_OP_TRIANGLE_NON_SHADED_Z      equ 0x09
 DP_OP_TRIANGLE_SHADED_Z          equ 0x0d
 DP_OP_TRIANGLE_TEXTURED_Z        equ 0x0b
 DP_OP_TRIANGLE_SHADED_TEXTURED_Z equ 0x0f
+
+;; Pipeline rasterization modes (used in SET_OTHER_MODES).
+MODE_1_CYCLE equ 0
+MODE_2_CYCLE equ 1
+MODE_COPY    equ 2
+MODE_FILL    equ 3
 

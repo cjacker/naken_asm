@@ -5,7 +5,7 @@
  *     Web: http://www.mikekohn.net/
  * License: GPLv3
  *
- * Copyright 2010-2020 by Michael Kohn
+ * Copyright 2010-2022 by Michael Kohn
  *
  */
 
@@ -165,6 +165,18 @@ static int tokens_binary_string_to_int(char *s, uint64_t *num, int prefixed)
   return 0;
 }
 
+int token_is_not_number(const char *token, int ptr)
+{
+  if (ptr < 2) { return 1; }
+  if (token[0] != '0') { return 1; }
+
+  if (token[1] == 'x') { return 0; }
+  if (token[1] == 'b') { return 0; }
+  if (token[1] == 'q') { return 0; }
+
+  return 1;
+}
+
 int tokens_get_char(struct _asm_context *asm_context)
 {
   int ch;
@@ -321,7 +333,9 @@ int tokens_get(struct _asm_context *asm_context, char *token, int len)
     }
 
     if (ch == '.' && ptr != 0 &&
-        token_type == TOKEN_STRING && asm_context->strings_have_dots)
+        token_type == TOKEN_STRING &&
+        asm_context->strings_have_dots &&
+        token_is_not_number(token, ptr))
     {
       token[ptr++] = ch;
       continue;
@@ -487,6 +501,12 @@ int tokens_get(struct _asm_context *asm_context, char *token, int len)
         else
       if (ch == '.' && token_type == TOKEN_NUMBER)
       {
+        if (asm_context->numbers_dont_have_dots)
+        {
+          tokens_unget_char(asm_context, ch);
+          break;
+        }
+
         token_type = TOKEN_FLOAT;
       }
         else

@@ -1,0 +1,119 @@
+.CHIP PFS172
+//{{PADAUK_CODE_OPTION
+	.Code_Option	Bootup_Time	Slow		// 2048 ILRC
+	.Code_Option	Security	Enable		// Security 7/8 words Enable
+	.Code_Option	LVR		2.0V
+	.Code_Option	Comparator_Edge	All_Edge
+	.Code_Option	TMx_Bit		6BIT
+	.Code_Option	TMx_Source	16MHz
+	.Code_Option	PWM_Source	16MHz
+	.Code_Option	GPC_PWM		Disable
+	.Code_Option	Interrupt_Src1	PB.0
+	.Code_Option	Interrupt_Src0	PA.0
+//}}PADAUK_CODE_OPTION
+.WRITER O_S
+
+	.ADJUST_IC	SYSCLK=IHRC/32, IHRC=16MHz, VDD=5V;
+		//	WatchDog Disable, RAM 0 ~ 0xF temporary be used
+	//	You can add the follow code :
+	//		CLKMD.En_WatchDog	=	1;		// WatchDog Enable
+
+WORD BLANK;
+WORD ASDF;
+	sp = 0;
+nop
+ldsptl
+ldspth
+addc a
+subc a
+izsn a
+dzsn a
+pcadd a
+not a
+neg a
+sr a
+sl a
+src a
+slc a
+swap a
+wdreset
+pushaf
+popaf
+reset
+stopsys
+stopexe
+engint
+disgint
+ret
+reti
+//mul
+xor CLKMD, a
+mov CLKMD, a
+mov a, CLKMD
+ret 100
+stt16 ASDF
+ldt16 ASDF
+idxm ASDF, a
+idxm a, ASDF
+swapc CLKMD.6
+comp LB@ASDF, a
+comp a, LB@ASDF
+nadd LB@ASDF, a
+nadd a, LB@ASDF
+add LB@ASDF, a
+sub LB@ASDF, a
+addc LB@ASDF, a
+subc LB@ASDF, a
+and LB@ASDF, a
+or LB@ASDF, a
+xor LB@ASDF, a
+mov LB@ASDF, a
+add a, LB@ASDF
+sub a, LB@ASDF
+addc a, LB@ASDF
+subc a, LB@ASDF
+and a, LB@ASDF
+or a, LB@ASDF
+xor a, LB@ASDF
+mov a, LB@ASDF
+addc LB@ASDF
+subc LB@ASDF
+izsn LB@ASDF
+dzsn LB@ASDF
+inc LB@ASDF
+dec LB@ASDF
+clear LB@ASDF
+xch LB@ASDF
+not LB@ASDF
+neg LB@ASDF
+sr LB@ASDF
+sl LB@ASDF
+src LB@ASDF
+slc LB@ASDF
+ceqsn a, LB@ASDF
+cneqsn a, LB@ASDF
+t0sn CLKMD.7
+t1sn CLKMD.7
+set0 CLKMD.6
+set1 CLKMD.2
+t0sn ASDF.7
+nop
+t1sn ASDF.7
+nop
+set0 ASDF.6
+nop
+set1 ASDF.2
+nop
+add a, 127
+sub a, 65
+ceqsn a, 33
+cneqsn a, 35
+and a, 99
+or a, 12
+xor a, 44
+mov a, 27
+goto 257
+call 300
+
+
+.ENDP

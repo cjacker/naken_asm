@@ -313,6 +313,7 @@ static char *get_hex(char *token, uint32_t *num)
 static char *get_num(char *token, uint32_t *num)
 {
   uint32_t n;
+
   int s;
 
   *num = 0;
@@ -364,15 +365,15 @@ static char *get_num(char *token, uint32_t *num)
     s++;
   }
 
-  *num = (n * sign) & 0xffff;
+  *num = (n * sign) & 0xffffffff;
 
   return token + s;
 }
 
 static char *get_address(
+  struct _util_context *util_context,
   char *token,
-  uint32_t *address,
-  struct _symbols *symbols)
+  uint32_t *address)
 {
   int ret;
 
@@ -380,7 +381,7 @@ static char *get_address(
   while (*token == ' ' && *token != 0) { token++; }
 
   // Search symbol table
-  ret = symbols_lookup(symbols, token, address);
+  ret = symbols_lookup(&util_context->symbols, token, address);
 
   if (ret == 0)
   {
@@ -388,7 +389,11 @@ static char *get_address(
     return token;
   }
 
-  return get_num(token, address);
+  token = get_num(token, address);
+
+  *address *= util_context->bytes_per_address;
+
+  return token;
 }
 
 static void load_debug_offsets(struct _util_context *util_context)
@@ -418,7 +423,8 @@ static void load_debug_offsets(struct _util_context *util_context)
   fseek(util_context->src_fp, 0, SEEK_SET);
   while (1)
   {
-    ch=getc(util_context->src_fp);
+    ch = getc(util_context->src_fp);
+
     if (ch == EOF || ch == '\n')
     {
       util_context->debug_line_offset[n++] = ftell(util_context->src_fp);
@@ -477,7 +483,7 @@ static int get_range(
   }
 
   // Look up start_string in symbol table or use number
-  token = get_address(start_string, start, &util_context->symbols);
+  token = get_address(util_context, start_string, start);
 
   if (token == NULL) { return -1; }
 
@@ -489,7 +495,7 @@ static int get_range(
   }
 
   // Look up end_string in symbol table or use number
-  token = get_address(end_string, end, &util_context->symbols);
+  token = get_address(util_context, end_string, end);
 
   if (token == NULL) { return -1; }
 
@@ -519,7 +525,7 @@ static void print8(struct _util_context *util_context, char *token)
       chars[ptr] = 0;
       if (ptr != 0) { printf(" %s\n", chars); }
       ptr = 0;
-      printf("0x%04x:", start);
+      printf("0x%04x:", start / util_context->bytes_per_address);
     }
 
     uint8_t data = memory_read_m(&util_context->memory, start);
@@ -574,7 +580,7 @@ static void print16(struct _util_context *util_context, char *token)
       chars[ptr] = 0;
       if (ptr != 0) printf(" %s\n", chars);
       ptr = 0;
-      printf("0x%04x:", start);
+      printf("0x%04x:", start / util_context->bytes_per_address);
     }
 
     int num = memory_read16_m(&util_context->memory, start);
@@ -632,18 +638,19 @@ static void print32(struct _util_context *util_context, char *token)
 
   if ((start & (util_context->alignment - 1)) != 0)
   {
-    printf("Address range 0x%04x to 0x%04x must start on a 4 byte boundary.\n", start, end);
+    printf("Address range 0x%04x to 0x%04x must start on a 4 byte boundary.\n",
+      start, end);
     return;
   }
 
   while (start < end)
   {
-    if ((ptr & 0x0f) == 0)
+    if ((ptr & 0x07) == 0)
     {
       chars[ptr] = 0;
       if (ptr != 0) printf(" %s\n", chars);
       ptr = 0;
-      printf("0x%04x:", start);
+      printf("0x%04x:", start / util_context->bytes_per_address);
     }
 
     uint32_t num = memory_read32_m(&util_context->memory, start);
@@ -679,7 +686,7 @@ static void print32(struct _util_context *util_context, char *token)
   if (ptr != 0)
   {
     int n;
-    for (n = ptr; n < 16; n += 2) { printf("     "); }
+    for (n = ptr; n < 8; n += 2) { printf("     "); }
     printf(" %s\n", chars);
   }
 }
@@ -700,7 +707,7 @@ static void write8(struct _util_context *util_context, char *token)
 
   if (token == 0) { printf("Syntax error: no address given.\n"); }
 
-  token = get_address(token, &address, &util_context->symbols);
+  token = get_address(util_context, token, &address);
 
   if (token == NULL) { printf("Syntax error: bad address\n"); }
 
@@ -715,7 +722,8 @@ static void write8(struct _util_context *util_context, char *token)
     count++;
   }
 
-  printf("Wrote %d bytes starting at address 0x%04x\n", count, n);
+  printf("Wrote %d bytes starting at address 0x%04x\n",
+    count, n / util_context->bytes_per_address);
 }
 
 static void write16(struct _util_context *util_context, char *token)
@@ -734,7 +742,7 @@ static void write16(struct _util_context *util_context, char *token)
 
   if (token == 0) { printf("Syntax error: no address given.\n"); }
 
-  token = get_address(token, &address, &util_context->symbols);
+  token = get_address(util_context, token, &address);
 
   if (token == NULL) { printf("Syntax error: bad address\n"); }
 
@@ -759,7 +767,8 @@ static void write16(struct _util_context *util_context, char *token)
     count++;
   }
 
-  printf("Wrote %d int16's starting at address 0x%04x\n", count, n);
+  printf("Wrote %d int16's starting at address 0x%04x\n",
+    count, n / util_context->bytes_per_address);
 }
 
 static void write32(struct _util_context *util_context, char *token)
@@ -778,7 +787,7 @@ static void write32(struct _util_context *util_context, char *token)
 
   if (token == 0) { printf("Syntax error: no address given.\n"); }
 
-  token = get_address(token, &address, &util_context->symbols);
+  token = get_address(util_context, token, &address);
 
   if (token == NULL) { printf("Syntax error: bad address\n"); }
 
@@ -801,7 +810,8 @@ static void write32(struct _util_context *util_context, char *token)
     count++;
   }
 
-  printf("Wrote %d int32's starting at address 0x%04x\n", count, n);
+  printf("Wrote %d int32's starting at address 0x%04x\n",
+    count, n / util_context->bytes_per_address);
 }
 
 static void disasm_range(struct _util_context *util_context, int start, int end)
@@ -822,7 +832,6 @@ static void disasm_range(struct _util_context *util_context, int start, int end)
 
   for (n = start; n <= end; n += page_size)
   {
-//printf("address=%x page=%x %d\n", n, n&(~page_mask), memory_in_use(&util_context->memory, n));
     if (memory_in_use(&util_context->memory, n))
     {
       if (valid_page_start == 0)
@@ -836,9 +845,20 @@ static void disasm_range(struct _util_context *util_context, int start, int end)
     {
       if (valid_page_start == 1)
       {
-        address_min = memory_get_page_address_min(&util_context->memory, curr_start);
-        address_max = memory_get_page_address_max(&util_context->memory, curr_end);
-        util_context->disasm_range(&util_context->memory, util_context->flags, address_min, address_max);
+        address_min = memory_get_page_address_min(
+          &util_context->memory,
+          curr_start);
+
+        address_max = memory_get_page_address_max(
+          &util_context->memory,
+          curr_end);
+
+        util_context->disasm_range(
+          &util_context->memory,
+          util_context->flags,
+          address_min,
+          address_max);
+
         valid_page_start = 0;
       }
     }
@@ -846,32 +866,34 @@ static void disasm_range(struct _util_context *util_context, int start, int end)
 
   if (valid_page_start == 1)
   {
-//printf("valid_page %x %x\n",curr_start, curr_end);
-    address_min = memory_get_page_address_min(&util_context->memory, curr_start);
+    address_min = memory_get_page_address_min(
+      &util_context->memory,
+      curr_start);
+
     address_max = memory_get_page_address_max(&util_context->memory, curr_end);
-    util_context->disasm_range(&util_context->memory, util_context->flags, address_min, address_max);
+
+    util_context->disasm_range(
+      &util_context->memory,
+      util_context->flags,
+      address_min,
+      address_max);
   }
-//printf("%x %x %d\n", start, end, memory_in_use(&util_context->memory, curr_end));
 }
 
-static void disasm(struct _util_context *util_context, char *token, int dbg_flag)
+static void disasm(
+  struct _util_context *util_context,
+  char *token,
+  int dbg_flag)
 {
   uint32_t start, end;
 
   if (get_range(util_context, token, &start, &end) == -1) { return; }
 
-  start = start * util_context->bytes_per_address;
-  end = end * util_context->bytes_per_address;
-
-#if 0
-  if ((start % 2) != 0 || (end % 2) != 0)
-  {
-    printf("Address range 0x%04x to 0x%04x must be on a 2 byte boundary.\n", start, end);
-    return;
-  }
-#endif
-
-  util_context->disasm_range(&util_context->memory, util_context->flags, start, end);
+  util_context->disasm_range(
+    &util_context->memory,
+    util_context->flags,
+    start,
+    end);
 }
 
 static void show_info(struct _util_context *util_context)
@@ -1028,7 +1050,7 @@ static int set_breakpoint(struct _util_context *util_context, char *command)
 
   uint32_t address;
 
-  char *end = get_address(command + 6, &address, &util_context->symbols);
+  char *end = get_address(util_context, command + 6, &address);
 
   if (end == NULL)
   {
@@ -1628,7 +1650,7 @@ int main(int argc, char *argv[])
       // FIXME: This is MSP430 specific.
       uint32_t num;
 
-      char *end = get_address(command + 5, &num, &util_context.symbols);
+      char *end = get_address(&util_context, command + 5, &num);
 
       if (end == NULL)
       {
