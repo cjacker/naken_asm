@@ -34,6 +34,7 @@ enum
   OPERAND_AT_DPTR,
   OPERAND_DATA,
   OPERAND_NUM,
+  OPERAND_SLASH_NUM,
   OPERAND_SLASH_BIT_ADDRESS,
   OPERAND_BIT_ADDRESS,
 };
@@ -81,6 +82,48 @@ static int compute_bit_address(
   print_error("Not bit addressable", asm_context);
 
   return -1;
+}
+
+// There are three kind of bit addr notation in 8051 asm.
+// 1. dot notation, such as '20H.1'. '80H.1'
+// 2. slash notation, only with ORL(opcode A0h) and ANL(opcode B0h)
+// 3. bit number, 
+//    - besides the dot notation, bit can be addressed by bit num
+//    - bits within 0x20h - 0x2Fh RAM is numbered from 00H to 7FH
+//    - bits above 0x80h RAM (acctually bits of bit addressable SFR) 
+//      is numbered from 80H to FFH, and their numbers exactly match 
+//      the start addr of SFR byte.
+
+// Below instructions are related to bit addr address problem,
+// and should support the 'dot notation' and 'number notation'.
+// 
+// 
+//
+// op  : instruction
+// -----------------
+// 10h : JBC bit addr, code addr
+// 20h : JB bit addr,code addr (rel)
+// 30h : JNB bit addr,code addr (rel)
+// 72h : ORL C,bit addr
+// 82h : ANL C,bit addr
+// 92h : MOV bit addr,C
+// A0h : ORL C,/bit addr
+// A2h : MOV C,bit addr
+// B0h : ANL C,/bit addr
+// B2h : CPL bit addr
+// C2h : CLR bit addr
+// D2h : SETB bit addr
+
+static int is_bit_op(int op)
+{
+  if(op == 0x10 || op == 0x20 ||
+     op == 0x30 || op == 0x72 ||
+     op == 0x82 || op == 0x92 ||
+     op == 0xa0 || op == 0xb0 ||
+     op == 0xa2 || op == 0xb2 ||
+     op == 0xc2 || op == 0xd2)
+    return 1;
+  return 0;
 }
 
 int parse_instruction_8051(struct _asm_context *asm_context, char *instr)
@@ -240,7 +283,9 @@ int parse_instruction_8051(struct _asm_context *asm_context, char *instr)
           else
         {
           tokens_push(asm_context, token, token_type);
-          operands[operand_count].type = OPERAND_NUM;
+          // using OPERAND_SLASH_NUM here to get the correct op
+          // avoid confusing with OPERAND_NUM and lost slash.
+          operands[operand_count].type = OPERAND_SLASH_NUM;
         }
       }
 
@@ -385,17 +430,15 @@ printf("\n");
             break;
           case OP_SLASH_BIT_ADDR:
             if ((operands[r].type != OPERAND_SLASH_BIT_ADDRESS &&
-                 operands[r].type != OPERAND_NUM) ||
+                 operands[r].type != OPERAND_SLASH_NUM) ||
                 (operands[r].value < 0 ||
                  operands[r].value > 255)) { r = 4; }
             break;
           case OP_BIT_ADDR:
             if (operands[r].type != OPERAND_BIT_ADDRESS)
             {
-              // This seems kind of invalid, but some other assembler allows
-              // the bit address to be defined as the binary version of the
-              // address rather than address.bit for at least clr and setb.
-              if (n == 0xd2 || n == 0xc2)
+              // refer to the comment of is_bit_op
+              if (is_bit_op(n))
               {
                 if (operands[r].type != OPERAND_NUM) { r = 4; }
               }
@@ -486,7 +529,7 @@ printf("\n");
             }
             case OP_SLASH_BIT_ADDR:
             {
-              if (operands[r].type == OPERAND_NUM)
+              if (is_bit_op(n) && operands[r].type == OPERAND_SLASH_NUM)
               {
                 num = operands[r].value;
               }
@@ -506,7 +549,7 @@ printf("\n");
             }
             case OP_BIT_ADDR:
             {
-              if ((n == 0xd2 || n == 0xc2) && operands[r].type == OPERAND_NUM)
+              if (is_bit_op(n) && operands[r].type == OPERAND_NUM)
               {
                 num = operands[r].value;
               }
