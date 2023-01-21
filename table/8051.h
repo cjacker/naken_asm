@@ -41,6 +41,7 @@ struct _table_8051
   char *name;
   char op[3];
   char range;   // range of register or page (r0, r1, r2 etc)
+  char cycles;
 };
 
 extern struct _table_8051 table_8051[];

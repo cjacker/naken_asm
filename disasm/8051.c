@@ -20,6 +20,8 @@
 
 int get_cycle_count_8051(uint32_t opcode)
 {
+  if(opcode >= 0 && opcode <= 255)
+    return table_8051[opcode].cycles;
   return -1;
 }
 
@@ -37,6 +39,9 @@ int disasm_8051(
   int n;
 
   opcode = READ_RAM(address);
+
+  *cycles_min = get_cycle_count_8051(opcode);
+  *cycles_max = get_cycle_count_8051(opcode);
 
   // The mov iram_addr, iram_addr instruction didn't fit the format of
   // the table and how the rest of the instructions were done.
