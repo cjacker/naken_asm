@@ -30,13 +30,19 @@ sed -i 's/^;P0/P0/g' bit_addr_by_num.asm
 
 # use naken_util to disasm a51 hex and naken hex
 echo "=========== disasm the result from a51 and naken_asm and diff  ==========="
-echo "Usually, there is no output from diff"
 echo ""
 ../../naken_util -disasm -8051 test_bit_a51.hex > test_bit_a51.disasm
 ../../naken_util -disasm -8051 test_bit_naken.hex > test_bit_naken.disasm
 sed -i 's/test_bit_a51/test_bit/g' test_bit_a51.disasm
 sed -i 's/test_bit_naken/test_bit/g' test_bit_naken.disasm
-diff -Nur test_bit_a51.disasm test_bit_naken.disasm
+diff_result=$(diff -Nur test_bit_a51.disasm test_bit_naken.disasm)
+
+if test -z "$diff_result"; then
+  echo "Test pass successfully"
+else
+  echo "Test failed:"
+  echo $diff_result
+fi
 
 # clean
 rm -f test_bit_a51.hex
