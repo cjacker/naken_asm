@@ -36,7 +36,7 @@ MAIN:
   
   MOV 80H.7, C
   MOV 87H, C
-  ;MOV P0.7, C
+  MOV P0.7, C
 
   MOV C, 80H.7
   MOV C, 87H
