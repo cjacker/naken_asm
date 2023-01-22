@@ -1,0 +1,5 @@
+.8051
+ORG 0000H
+MAIN:
+	MOV C, P0
+END

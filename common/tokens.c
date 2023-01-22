@@ -650,6 +650,40 @@ int tokens_get(struct _asm_context *asm_context, char *token, int len)
 
   if (token_type == TOKEN_STRING)
   {
+    // for 8051.
+    //
+    // tokens_get will finally return a number 128(0x80h) 
+    // after symbol lookup when encounter a symbol such as 'P0'.
+    //
+    // to support bit address by bit number, we need to
+    // distinguish the 128 of 'P0' from 'P0.0' and '0x80h'.
+    //
+    // Here when encounter all known bit addressable SFR,
+    // record the original symbol string and 
+    // mark is_8051_bit_addressable_sfr flag as 1.
+    //
+    // the flag will be cleared in asm/8051.c if it followed with a dot '.',
+    // then we can distinguish 'P0.0' from P0.
+    //
+    // if finally the flag is not cleared before add_bin8, 
+    // that means it is a SFR instead of a real number, then error.
+
+    if (strcasecmp(token, "P0") == 0 ||
+        strcasecmp(token, "TCON") == 0 ||
+        strcasecmp(token, "P1") == 0 ||
+        strcasecmp(token, "SCON") == 0 ||
+        strcasecmp(token, "P2") == 0 ||
+        strcasecmp(token, "IE") == 0 ||
+        strcasecmp(token, "P3") == 0 ||
+        strcasecmp(token, "IP") == 0 ||
+        strcasecmp(token, "PSW") == 0 ||
+        strcasecmp(token, "ACC") == 0 ||
+        strcasecmp(token, "B") == 0)
+    {
+      asm_context->is_8051_bit_addressable_sfr = 1;
+      strcpy(asm_context->orig_8051_sfr_string, token);
+    }
+
     int param_count = 0;
     char *macro = macros_lookup(&asm_context->macros, token, &param_count);
     uint32_t address;

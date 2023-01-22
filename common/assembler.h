@@ -81,6 +81,8 @@ struct _asm_context
   uint8_t in_repeat : 1;
   uint32_t flags;
   uint32_t extra_context;
+  uint8_t is_8051_bit_addressable_sfr;
+  char orig_8051_sfr_string[8];
 };
 
 void assembler_init(struct _asm_context *asm_context);

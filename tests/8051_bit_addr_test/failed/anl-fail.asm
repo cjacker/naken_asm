@@ -1,0 +1,5 @@
+.8051
+ORG 0000H
+MAIN:
+  ANL C, P0
+END

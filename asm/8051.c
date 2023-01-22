@@ -256,6 +256,7 @@ int parse_instruction_8051(struct _asm_context *asm_context, char *instr)
         ignore_operand(asm_context);
         operands[operand_count].value = 0x80;
         operands[operand_count].type = OPERAND_SLASH_BIT_ADDRESS;
+        asm_context->is_8051_bit_addressable_sfr = 0;
       }
         else
       {
@@ -277,6 +278,7 @@ int parse_instruction_8051(struct _asm_context *asm_context, char *instr)
 
           operands[operand_count].type = OPERAND_SLASH_BIT_ADDRESS;
           operands[operand_count].bit = num;
+          asm_context->is_8051_bit_addressable_sfr = 0;
         }
           else
         {
@@ -314,6 +316,7 @@ int parse_instruction_8051(struct _asm_context *asm_context, char *instr)
             operands[operand_count].value = 0x80;
             operands[operand_count].bit = 0;
             operands[operand_count].type = OPERAND_BIT_ADDRESS;
+            asm_context->is_8051_bit_addressable_sfr = 0;
           }
         }
 
@@ -339,6 +342,7 @@ int parse_instruction_8051(struct _asm_context *asm_context, char *instr)
 
           operands[operand_count].type = OPERAND_BIT_ADDRESS;
           operands[operand_count].bit = num;
+          asm_context->is_8051_bit_addressable_sfr = 0;
         }
           else
         {
@@ -541,6 +545,11 @@ printf("\n");
 
               if (num == -1) { return -1; }
 
+              if (is_bit_op(n) && asm_context->is_8051_bit_addressable_sfr) {
+                print_error_unexp(asm_context->orig_8051_sfr_string, asm_context);
+                return -1;
+              }
+
               add_bin8(asm_context, num, IS_OPCODE);
               count++;
               break;
@@ -560,6 +569,11 @@ printf("\n");
               }
 
               if (num == -1) { return -1; }
+
+              if (is_bit_op(n) && asm_context->is_8051_bit_addressable_sfr) {
+                print_error_unexp(asm_context->orig_8051_sfr_string, asm_context);
+                return -1;
+              }
 
               add_bin8(asm_context, num, IS_OPCODE);
               count++;
