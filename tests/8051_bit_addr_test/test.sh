@@ -6,6 +6,7 @@ echo ""
 echo ""
 
 sed -i 's/^.8051/;.8051/g' bit_addr_by_num.asm
+sed -i 's/^P0/;P0/g' bit_addr_by_num.asm
 
 a51 bit_addr_by_num.asm && \
 bl51 bit_addr_by_num.OBJ to bit_addr_by_num.OMF && \
@@ -21,11 +22,11 @@ rm -f BIT_ADDR_BY_NUM.M51
 echo "=========== Build bit_addr_by_num.asm with naken_asm ==========="
 echo ""
 echo ""
+
 sed -i 's/^;.8051/.8051/g' bit_addr_by_num.asm
+sed -i 's/^;P0/P0/g' bit_addr_by_num.asm
+
 ../../naken_asm bit_addr_by_num.asm -o test_bit_naken.hex 
-
-sed -i 's/^.8051/;.8051/g' bit_addr_by_num.asm
-
 
 # use naken_util to disasm a51 hex and naken hex
 echo "=========== disasm the result from a51 and naken_asm and diff  ==========="
