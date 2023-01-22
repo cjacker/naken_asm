@@ -1,9 +1,12 @@
 .8051
+
 ORG 0000H
 MAIN:
-	JBC 0B1H.0, TEST
-	SJMP $
+  ;B1 is not bit addressable.
+  JBC 0B1H.0, TEST
 
-    TEST:
-	NOP
+  SJMP $
+
+  TEST:
+    NOP
 END

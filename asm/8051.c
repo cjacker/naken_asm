@@ -84,20 +84,18 @@ static int compute_bit_address(
   return -1;
 }
 
-// There are three kind of bit addr notation in 8051 asm.
+// There are 2 kind of bit addr notation in 8051 asm.
 // 1. dot notation, such as '20H.1'. '80H.1'
-// 2. slash notation, only with ORL(opcode A0h) and ANL(opcode B0h)
-// 3. bit number, 
-//    - besides the dot notation, bit can be addressed by bit num
+// 2. bit number, 
+//    - besides the dot notation, bit can be addressed by number
 //    - bits within 0x20h - 0x2Fh RAM is numbered from 00H to 7FH
-//    - bits above 0x80h RAM (acctually bits of bit addressable SFR) 
-//      is numbered from 80H to FFH, and their numbers exactly match 
-//      the start addr of SFR byte.
-
-// Below instructions are related to bit addr address problem,
-// and should support the 'dot notation' and 'number notation'.
-// 
-// 
+//    - bits above 0x80h RAM (bits of bit addressable SFR) 
+//      is numbered from 80H to FFH, and their numbers are exactly 
+//      equal to 'the start addr of the SFR byte + bit offset in the byte'.
+// And above two notations should support slash notation with ORL/ANL.
+//
+// Below instructions are all instructions related to bit addr,
+// and should support both of the 'dot notation' and 'number notation'.
 //
 // op  : instruction
 // -----------------
