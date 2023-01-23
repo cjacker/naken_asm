@@ -545,8 +545,9 @@ printf("\n");
 
               if (num == -1) { return -1; }
 
-              if (is_bit_op(n) && asm_context->is_8051_bit_addressable_sfr) {
-                print_error_unexp(asm_context->orig_8051_sfr_string, asm_context);
+              if (is_bit_op(n) && asm_context->is_8051_bit_addressable_sfr) 
+              {
+                print_error_unexp(asm_context->sfr_string_8051, asm_context);
                 return -1;
               }
 
@@ -570,8 +571,9 @@ printf("\n");
 
               if (num == -1) { return -1; }
 
-              if (is_bit_op(n) && asm_context->is_8051_bit_addressable_sfr) {
-                print_error_unexp(asm_context->orig_8051_sfr_string, asm_context);
+              if (is_bit_op(n) && asm_context->is_8051_bit_addressable_sfr) 
+              {
+                print_error_unexp(asm_context->sfr_string_8051, asm_context);
                 return -1;
               }
 
@@ -594,6 +596,11 @@ printf("\n");
       }
     }
   }
+
+  // one instruction parsed,
+  // clear sfr flag bit and sfr string.
+  asm_context->is_8051_bit_addressable_sfr = 0;
+  memset(asm_context->sfr_string_8051, 0, 8);
 
   if (n == 256)
   {

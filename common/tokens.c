@@ -650,42 +650,56 @@ int tokens_get(struct _asm_context *asm_context, char *token, int len)
 
   if (token_type == TOKEN_STRING)
   {
+    int param_count = 0;
+    char *macro = macros_lookup(&asm_context->macros, token, &param_count);
+
     // for 8051.
     //
-    // tokens_get will finally return a number 128(0x80h) 
-    // after symbol lookup when encounter a symbol such as 'P0'.
+    // tokens_get finally return TOKEN_NUM 128(80H)
+    // after macro lookup when encounter 'P0', for example.
     //
     // to support bit address by bit number, we need to
-    // distinguish the 128 of 'P0' from 'P0.0' and '0x80h'.
+    // distinguish 'P0' from 'P0.0', both are '80H'
     //
     // Here when encounter all known bit addressable SFR,
-    // record the original symbol string and 
+    // record the original symbol string and
     // mark is_8051_bit_addressable_sfr flag as 1.
     //
     // the flag will be cleared in asm/8051.c if it followed with a dot '.',
     // then we can distinguish 'P0.0' from P0.
     //
-    // if finally the flag is not cleared before add_bin8, 
-    // that means it is a SFR instead of a real number, then error.
-
-    if (strcasecmp(token, "P0") == 0 ||
-        strcasecmp(token, "TCON") == 0 ||
-        strcasecmp(token, "P1") == 0 ||
-        strcasecmp(token, "SCON") == 0 ||
-        strcasecmp(token, "P2") == 0 ||
-        strcasecmp(token, "IE") == 0 ||
-        strcasecmp(token, "P3") == 0 ||
-        strcasecmp(token, "IP") == 0 ||
-        strcasecmp(token, "PSW") == 0 ||
-        strcasecmp(token, "ACC") == 0 ||
-        strcasecmp(token, "B") == 0)
+    // if the flag is not cleared before add_bin8,
+    // that means it is a SFR instead of a real number, then throw an error.
+    //
+    // if currect inst isn't bit related, the flag will be cleared 
+    // after instruction parsed.
+    //
+    // 'convert macro to num' and num&0x07==0 can be used to detect 
+    // it's should bit addressable or not.
+    //
+    // it's a tradeoff, here using the token str should be enough.
+    //
+    // One limit is only known sfr will be supported, even user define 
+    // 'PORT0 EQU 80H', it still can be used with bit addr instruction.
+    //
+    if (asm_context->cpu_type == CPU_TYPE_8051 &&
+        macro != NULL &&
+        (strcasecmp(token, "P0") == 0 ||
+         strcasecmp(token, "TCON") == 0 ||
+         strcasecmp(token, "P1") == 0 ||
+         strcasecmp(token, "SCON") == 0 ||
+         strcasecmp(token, "P2") == 0 ||
+         strcasecmp(token, "IE") == 0 ||
+         strcasecmp(token, "P3") == 0 ||
+         strcasecmp(token, "IP") == 0 ||
+         strcasecmp(token, "PSW") == 0 ||
+         strcasecmp(token, "ACC") == 0 ||
+         strcasecmp(token, "B") == 0) ) 
     {
       asm_context->is_8051_bit_addressable_sfr = 1;
-      strcpy(asm_context->orig_8051_sfr_string, token);
+      strcpy(asm_context->sfr_string_8051, token); 
     }
 
-    int param_count = 0;
-    char *macro = macros_lookup(&asm_context->macros, token, &param_count);
     uint32_t address;
     int ret = -1;
 

@@ -1,0 +1,9 @@
+.8051
+
+P0 EQU 80H
+
+ORG 0000H
+MAIN:
+  MOV A, P0
+  setb 80H
+END
